@@ -114,10 +114,14 @@ void move(char direcao){
 }
 
 void expldepilula(){
+    if(!tempilula) return;
+
     explodepilula2(heroi.x, heroi.y, 0, 1, 3);
     explodepilula2(heroi.x, heroi.y, 0, -1, 3);
     explodepilula2(heroi.x, heroi.y, 1, 0, 3);
     explodepilula2(heroi.x, heroi.y, -1, 0, 3);
+
+    tempilula = 0;
 }
 
 void explodepilula2(int x, int y, int somax, int somay, int qtd){
