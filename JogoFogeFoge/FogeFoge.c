@@ -4,6 +4,7 @@
 #include <time.h>
 #include "FogeFoge.h"
 #include "Mapa.h"
+#include "ui.h"
 
 MAPA m;
 POSICAO heroi;
