@@ -1,51 +1,129 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "FogeFoge.h"
+#include "Mapa.h"
 
-char** mapa;
-int linhas, colunas;
+MAPA m;
+POSICAO heroi;
 
-void liberamapa(){
-    for (int i = 0; i < linhas; i++) {
-        free(mapa[i]);
-    }
-
-    free(mapa);
-}
-
-void alocamapa(){
-    mapa = malloc(sizeof(char*) * linhas);
-    for (int i = 0; i < linhas; i++){
-        mapa[i] = malloc(sizeof(char) * colunas+1);
-    }
-}
-
-void lemapa(){
-    FILE *f;
-    f = fopen("mapa.txt", "r");
-    if (f == 0) {
-        printf("Erro na leitura do mapa");
-        exit(1);
+int praondefantasmavai(int xatual, int yatual, int* xdestino, int* ydestino){
+    int opcoes[4][2] = {
+        { xatual, yatual +1},
+        { xatual +1, yatual},
+        { xatual, yatual-1},
+        { xatual -1, yatual}
     };
 
-    fscanf(f, "%d %d", &linhas, &colunas);
-    
-    alocamapa();
+    srand(time(0));
+    for(int i = 0; i < 10; i++){
+        int posicao = rand() % 4;
 
-    for (int i = 0; i <= 4; i++){
-        fscanf(f, "%s", mapa[i]);
+        if(podeandar(&m, FANTASMA, opcoes[posicao][0], opcoes[posicao][1])) {
+            *xdestino = opcoes[posicao][0];
+            *ydestino = opcoes[posicao][1];
+
+            return 1 ;
+        }
     }
-    fclose(f);
+
+    return 0;
+}
+
+void copiamapa(MAPA* destino, MAPA* origem){
+    destino->linhas = origem->linhas;
+    destino->colunas = origem->colunas;
+
+    alocamapa(destino);
+    for(int i = 0; i < origem->linhas; i++){
+        strcpy(destino->matriz[i], origem->matriz[i]);
+    }
+}
+
+void fantasmas(){
+    MAPA copia;
+
+    copiamapa(&copia, &m);
+
+    for(int i=0; i<m.linhas; i++){
+        for(int j=0; j<m.colunas; j++){
+            if(m.matriz[i][j] == FANTASMA){
+
+                int xdestino, ydestino;
+                int encontrou = praondefantasmavai(i, j, &xdestino, &ydestino);
+
+                if(encontrou) {
+                    andanomapa(&m, i, j, xdestino, ydestino);
+                }
+            }
+        }
+    }
+
+    liberamapa(&copia);
+}
+
+int acabou(){
+    POSICAO pos;
+    int fogefogenomapa = encontramapa(&m, &pos, HEROI);
+    return !fogefogenomapa;
+}
+
+int ehdirecao(char direcao){
+    return direcao == ESQUERDA || direcao == CIMA || direcao == BAIXO || direcao == DIREITA;
+}
+
+void move(char direcao){
+    if(!ehdirecao(direcao)) return;
+
+    int proximox = heroi.x;
+    int proximoy = heroi.y;
+
+    m.matriz[heroi.x][heroi.y] = VAZIO;
+
+    switch (direcao)
+    {
+    case ESQUERDA:
+        proximoy--;
+        break;
+    
+    case CIMA:
+        proximox--;
+        break;
+    
+    case BAIXO:
+        proximox++;
+        break;
+
+    case DIREITA:
+        proximoy++;
+        break;
+    }
+
+    if(!podeandar(&m, HEROI, proximox, proximoy)) return;
+
+    andanomapa(&m, heroi.x, heroi.y, proximox, proximoy);
+
+    heroi.x = proximox;
+    heroi.y = proximoy;
 }
 
 int main(){
-    
-    lemapa();
+    lemapa(&m);
+    encontramapa(&m, &heroi, HEROI);
 
-    for (int i = 0; i <= 4; i++){
-        printf("%s\n", mapa[i]);
-    }
+    do {
 
-    liberamapa();
+        imprimemapa(&m);
+
+        char comando;
+        scanf(" %c", &comando);
+        move(comando);
+        fantasmas();
+        
+    } while(!acabou());
+
+    liberamapa(&m);
 
     return 0;
 }
